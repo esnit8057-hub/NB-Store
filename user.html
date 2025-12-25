@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TechDroid Store</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f9fafb;
+            --surface: #ffffff;
+            --text: #111827;
+            --text-secondary: #6b7280;
+            --border: #e5e7eb;
+            --radius: 16px;
+            --btn-radius: 20px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg); color: var(--text); padding-bottom: 80px; }
+        
+        /* Scrollbar hide */
+        ::-webkit-scrollbar { display: none; }
+
+        /* Header */
+        header {
+            position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px); border-bottom: 1px solid var(--border);
+            padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.1rem; color: var(--text); }
+        .brand img { width: 32px; height: 32px; border-radius: 8px; object-fit: cover; }
+        
+        .donate-btn {
+            background: #ecfdf5; color: #059669; border: 1px solid #10b981;
+            padding: 6px 14px; border-radius: var(--btn-radius); font-size: 0.8rem;
+            font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 5px; cursor: pointer;
+        }
+
+        /* Search & Filter */
+        .controls { padding: 15px 20px; background: var(--surface); border-bottom: 1px solid var(--border); }
+        .search-box { position: relative; margin-bottom: 15px; }
+        .search-box input {
+            width: 100%; padding: 10px 15px 10px 38px; background: var(--bg);
+            border: none; border-radius: 10px; font-size: 1rem; outline: none; color: var(--text);
+        }
+        .search-box i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
+
+        .filters { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; }
+        .filter-btn {
+            padding: 6px 16px; background: var(--bg); border: 1px solid var(--border); color: var(--text-secondary);
+            border-radius: var(--btn-radius); font-size: 0.9rem; font-weight: 600; white-space: nowrap; cursor: pointer; transition: 0.2s;
+        }
+        .filter-btn.active { background: var(--text); color: white; border-color: var(--text); }
+
+        /* App List */
+        .app-list { padding: 10px 0; }
+        .app-item {
+            display: flex; align-items: center; gap: 15px; background: var(--surface);
+            padding: 15px 20px; border-bottom: 1px solid var(--border);
+            cursor: pointer; transition: 0.2s;
+        }
+        .app-item:active { background: #f3f4f6; }
+        .app-item img { width: 58px; height: 58px; border-radius: 12px; object-fit: cover; background: #eee; border: 1px solid var(--border); }
+        .app-info { flex: 1; min-width: 0; }
+        .app-title { font-size: 1rem; font-weight: 600; margin-bottom: 2px; color: var(--text); }
+        .app-sub { font-size: 0.8rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        /* Download Button (List) */
+        .get-btn {
+            background: #eff6ff; color: var(--primary); font-weight: 700;
+            padding: 6px 18px; border-radius: var(--btn-radius); font-size: 0.8rem;
+            text-transform: uppercase; border: none; cursor: pointer; pointer-events: auto;
+        }
+
+        /* App Details Modal (Full Screen) */
+        #app-modal {
+            position: fixed; inset: 0; background: var(--surface); z-index: 100;
+            overflow-y: auto; transform: translateY(100%); transition: transform 0.3s ease-in-out;
+            display: flex; flex-direction: column;
+        }
+        #app-modal.open { transform: translateY(0); }
+        
+        .modal-nav {
+            position: sticky; top: 0; background: rgba(255,255,255,0.9); backdrop-filter: blur(5px);
+            padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px;
+        }
+        .back-btn { background: none; border: none; font-size: 1.2rem; color: var(--primary); cursor: pointer; }
+
+        .modal-content { padding: 20px; padding-bottom: 100px; }
+        
+        .detail-header { display: flex; gap: 15px; margin-bottom: 25px; }
+        .detail-icon { width: 100px; height: 100px; border-radius: 22px; object-fit: cover; border: 1px solid var(--border); }
+        .detail-meta h1 { font-size: 1.3rem; margin-bottom: 5px; }
+        .detail-meta p { color: var(--text-secondary); font-size: 0.9rem; }
+        
+        .stats-bar { display: flex; justify-content: space-between; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 15px 0; margin-bottom: 20px; }
+        .stat-item { text-align: center; flex: 1; border-right: 1px solid var(--border); }
+        .stat-item:last-child { border: none; }
+        .stat-val { font-weight: 700; color: var(--text-secondary); font-size: 1.1rem; }
+        .stat-label { font-size: 0.75rem; color: #9ca3af; text-transform: uppercase; margin-top: 2px; }
+
+        .section-title { font-size: 1.1rem; font-weight: 700; margin: 20px 0 10px; }
+        .desc-text { color: var(--text); line-height: 1.5; font-size: 0.95rem; }
+        
+        .screenshots { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; scroll-snap-type: x mandatory; }
+        .screen-img { height: 300px; border-radius: 12px; scroll-snap-align: start; border: 1px solid var(--border); }
+
+        .permissions-box { background: var(--bg); padding: 15px; border-radius: 12px; font-size: 0.9rem; color: var(--text-secondary); }
+
+        /* Rating Stars */
+        .rating-input { display: flex; gap: 10px; margin-top: 10px; }
+        .star { font-size: 1.5rem; color: #d1d5db; cursor: pointer; transition: 0.2s; }
+        .star.filled { color: #f59e0b; }
+
+        /* Sticky Footer for Download */
+        .modal-footer {
+            position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface);
+            padding: 15px 20px; border-top: 1px solid var(--border);
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+        }
+        .download-full-btn {
+            width: 100%; background: var(--primary); color: white; border: none;
+            padding: 14px; border-radius: 12px; font-size: 1rem; font-weight: 700;
+            cursor: pointer; text-align: center; text-decoration: none; display: block;
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- Main Store View -->
+    <header>
+        <div class="brand">
+            <img id="store-logo" src="https://via.placeholder.com/32" alt="Logo">
+            <span id="store-name">TechDroid</span>
+        </div>
+        <a href="#" id="donate-btn" class="donate-btn hidden">
+            <i class="fas fa-heart"></i> Donate
+        </a>
+    </header>
+
+    <div class="controls">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="search-input" placeholder="Search apps & games">
+        </div>
+        <div class="filters">
+            <button class="filter-btn active" onclick="filterApps('All')">All</button>
+            <button class="filter-btn" onclick="filterApps('App')">Apps</button>
+            <button class="filter-btn" onclick="filterApps('Game')">Games</button>
+        </div>
+    </div>
+
+    <div id="app-list" class="app-list">
+        <p style="text-align: center; padding: 20px; color: var(--text-secondary);">Loading apps...</p>
+    </div>
+
+    <!-- App Details Modal -->
+    <div id="app-modal">
+        <div class="modal-nav">
+            <button class="back-btn" onclick="closeModal()"><i class="fas fa-chevron-left"></i> Back</button>
+        </div>
+        <div class="modal-content">
+            <div class="detail-header">
+                <img id="detail-icon" class="detail-icon" src="" alt="">
+                <div class="detail-meta">
+                    <h1 id="detail-title">App Title</h1>
+                    <p id="detail-subtitle">Subtitle</p>
+                    <p id="detail-cat" style="color: var(--primary); font-size: 0.8rem; margin-top: 5px; font-weight: 600;">Category</p>
+                </div>
+            </div>
+
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <div class="stat-val" id="avg-rating">0.0 <i class="fas fa-star" style="font-size:0.7rem"></i></div>
+                    <div class="stat-label">Rating</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-val">FREE</div>
+                    <div class="stat-label">Price</div>
+                </div>
+            </div>
+
+            <div class="section-title">Screenshots</div>
+            <div class="screenshots" id="detail-screens">
+                <!-- Screenshots injected here -->
+            </div>
+
+            <div class="section-title">About this app</div>
+            <p class="desc-text" id="detail-desc">Description goes here...</p>
+
+            <div class="section-title">Rate this app</div>
+            <div class="rating-input" id="star-container">
+                <i class="far fa-star star" data-val="1"></i>
+                <i class="far fa-star star" data-val="2"></i>
+                <i class="far fa-star star" data-val="3"></i>
+                <i class="far fa-star star" data-val="4"></i>
+                <i class="far fa-star star" data-val="5"></i>
+            </div>
+            <p id="rating-msg" style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 5px;"></p>
+
+            <div class="section-title">Permissions</div>
+            <div class="permissions-box" id="detail-perms">
+                No special permissions required.
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <a href="#" target="_blank" id="detail-download" class="download-full-btn">Download</a>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
+    <script>
+        // ---------------------------------------------------------
+        // ⚠️ PASTE YOUR FIREBASE CONFIG HERE (Same as Admin)
+        // ---------------------------------------------------------
+        const firebaseConfig = {
+  apiKey: "AIzaSyCMIs7zCR7aRn1XfZbeEtia3Sd8d9zTXvI",
+  authDomain: "social-media-app-f92d9.firebaseapp.com",
+  databaseURL: "https://social-media-app-f92d9-default-rtdb.firebaseio.com",
+  projectId: "social-media-app-f92d9",
+  storageBucket: "social-media-app-f92d9.firebasestorage.app",
+  messagingSenderId: "194999899644",
+  appId: "1:194999899644:web:3e2697482c2512fe15ce79"
+};
+        // ---------------------------------------------------------
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // State
+        let allApps = [];
+        let currentFilter = 'All';
+        let currentAppId = null;
+
+        // Elements
+        const appListEl = document.getElementById('app-list');
+        const searchInput = document.getElementById('search-input');
+        const modal = document.getElementById('app-modal');
+
+        // Load Initial Data
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSettings();
+            loadApps();
+        });
+
+        function loadSettings() {
+            db.ref('settings').on('value', snap => {
+                const data = snap.val();
+                if(data) {
+                    if(data.name) document.getElementById('store-name').textContent = data.name;
+                    if(data.logo) document.getElementById('store-logo').src = data.logo;
+                }
+            });
+
+            db.ref('upi').on('value', snap => {
+                const data = snap.val();
+                const btn = document.getElementById('donate-btn');
+                if(data && data.id) {
+                    // Create UPI Link
+                    const upiLink = `upi://pay?pa=${data.id}&pn=${document.getElementById('store-name').innerText}&cu=INR`;
+                    btn.href = upiLink;
+                    btn.classList.remove('hidden');
+                } else {
+                    btn.classList.add('hidden');
+                }
+            });
+        }
+
+        function loadApps() {
+            db.ref('apps').on('value', snap => {
+                const data = snap.val();
+                allApps = [];
+                if(data) {
+                    Object.keys(data).forEach(key => {
+                        allApps.push({ id: key, ...data[key] });
+                    });
+                }
+                renderApps();
+            });
+        }
+
+        function renderApps() {
+            const query = searchInput.value.toLowerCase();
+            const filtered = allApps.filter(app => {
+                const matchesFilter = currentFilter === 'All' || app.category === currentFilter;
+                const matchesSearch = app.title.toLowerCase().includes(query);
+                return matchesFilter && matchesSearch;
+            });
+
+            appListEl.innerHTML = '';
+            if(filtered.length === 0) {
+                appListEl.innerHTML = '<p style="text-align:center; padding:20px; color:#999">No apps found.</p>';
+                return;
+            }
+
+            filtered.forEach(app => {
+                const div = document.createElement('div');
+                div.className = 'app-item';
+                div.onclick = (e) => {
+                    // If clicked button, don't open modal (optional, but here we open modal for both or link)
+                    // Let's make the list item open modal, button opens link
+                    if(e.target.classList.contains('get-btn')) {
+                         e.stopPropagation();
+                         openModal(app.id); // Or window.open(app.downloadLink)
+                    } else {
+                        openModal(app.id);
+                    }
+                };
+
+                div.innerHTML = `
+                    <img src="${app.logo}" onerror="this.src='https://via.placeholder.com/60'">
+                    <div class="app-info">
+                        <div class="app-title">${app.title}</div>
+                        <div class="app-sub">${app.subtitle}</div>
+                    </div>
+                    <button class="get-btn" onclick="window.open('${app.downloadLink}', '_blank'); event.stopPropagation();">Get</button>
+                `;
+                appListEl.appendChild(div);
+            });
+        }
+
+        // Filtering
+        window.filterApps = (cat) => {
+            currentFilter = cat;
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderApps();
+        };
+
+        searchInput.addEventListener('input', renderApps);
+
+        // -----------------------
+        // APP DETAILS & MODAL
+        // -----------------------
+        window.openModal = (appId) => {
+            currentAppId = appId;
+            const app = allApps.find(a => a.id === appId);
+            if(!app) return;
+
+            // Populate Info
+            document.getElementById('detail-icon').src = app.logo;
+            document.getElementById('detail-title').innerText = app.title;
+            document.getElementById('detail-subtitle').innerText = app.subtitle;
+            document.getElementById('detail-cat').innerText = app.category;
+            document.getElementById('detail-desc').innerText = app.description;
+            document.getElementById('detail-perms').innerText = app.permissions || 'None';
+            document.getElementById('detail-download').href = app.downloadLink;
+
+            // Populate Screenshots
+            const screenCont = document.getElementById('detail-screens');
+            screenCont.innerHTML = '';
+            if(app.screenshots && app.screenshots.length > 0) {
+                app.screenshots.forEach(url => {
+                    const img = document.createElement('img');
+                    img.src = url.trim();
+                    img.className = 'screen-img';
+                    screenCont.appendChild(img);
+                });
+            } else {
+                screenCont.innerHTML = '<p style="padding:10px; color:#999">No screenshots available.</p>';
+            }
+
+            // Load Ratings
+            loadRatings(appId);
+
+            // Open Modal
+            modal.classList.add('open');
+            document.body.style.overflow = 'hidden'; // Stop background scroll
+        };
+
+        window.closeModal = () => {
+            modal.classList.remove('open');
+            document.body.style.overflow = 'auto';
+            currentAppId = null;
+        };
+
+        // -----------------------
+        // RATING SYSTEM
+        // -----------------------
+        const starContainer = document.getElementById('star-container');
+        const stars = starContainer.querySelectorAll('.star');
+
+        // Star Click Event
+        stars.forEach(star => {
+            star.addEventListener('click', () => {
+                if(!currentAppId) return;
+                const rating = parseInt(star.getAttribute('data-val'));
+                submitRating(currentAppId, rating);
+            });
+        });
+
+        function submitRating(appId, rating) {
+            // Push new rating
+            db.ref(`ratings/${appId}`).push({
+                stars: rating,
+                timestamp: Date.now()
+            }).then(() => {
+                document.getElementById('rating-msg').innerText = "Thanks for rating!";
+                updateStarVisuals(rating);
+            });
+        }
+
+        function loadRatings(appId) {
+            document.getElementById('rating-msg').innerText = "Tap a star to rate";
+            updateStarVisuals(0); // Reset UI
+            
+            db.ref(`ratings/${appId}`).on('value', snap => {
+                const data = snap.val();
+                if(data) {
+                    const values = Object.values(data);
+                    const sum = values.reduce((acc, curr) => acc + curr.stars, 0);
+                    const avg = (sum / values.length).toFixed(1);
+                    document.getElementById('avg-rating').innerHTML = `${avg} <i class="fas fa-star" style="font-size:0.7rem"></i>`;
+                } else {
+                    document.getElementById('avg-rating').innerHTML = `0.0 <i class="fas fa-star" style="font-size:0.7rem"></i>`;
+                }
+            });
+        }
+
+        function updateStarVisuals(rating) {
+            stars.forEach(s => {
+                const val = parseInt(s.getAttribute('data-val'));
+                if(val <= rating) {
+                    s.classList.remove('far');
+                    s.classList.add('fas', 'filled');
+                } else {
+                    s.classList.remove('fas', 'filled');
+                    s.classList.add('far');
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>

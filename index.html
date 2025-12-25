@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechDroid Admin Panel</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --bg: #f3f4f6;
+            --surface: #ffffff;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --border: #e5e7eb;
+            --danger: #ef4444;
+            --success: #10b981;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg); color: var(--text); min-height: 100vh; }
+        
+        /* Utils */
+        .hidden { display: none !important; }
+        .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 500; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-sm { padding: 6px 12px; font-size: 0.85rem; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 500; font-size: 0.9rem; }
+        .form-control { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; outline: none; transition: 0.2s; }
+        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        textarea.form-control { resize: vertical; min-height: 80px; }
+
+        /* Login Screen */
+        #login-screen {
+            position: fixed; inset: 0; background: var(--bg); z-index: 1000;
+            display: flex; justify-content: center; align-items: center; padding: 20px;
+        }
+        .login-card {
+            background: var(--surface); padding: 2rem; border-radius: var(--radius);
+            box-shadow: var(--shadow); width: 100%; max-width: 400px; text-align: center;
+        }
+        .login-card h2 { margin-bottom: 1.5rem; color: var(--primary); }
+
+        /* Dashboard Layout */
+        #app-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        
+        /* Header */
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--surface); padding: 15px 20px; border-radius: var(--radius);
+            margin-bottom: 20px; box-shadow: var(--shadow);
+        }
+        .brand { font-size: 1.25rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+        .brand img { width: 32px; height: 32px; border-radius: 6px; object-fit: cover; }
+
+        /* Navigation */
+        .nav-tabs {
+            display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; margin-bottom: 20px;
+        }
+        .nav-btn {
+            background: var(--surface); border: 1px solid var(--border);
+            padding: 8px 16px; border-radius: 20px; white-space: nowrap;
+        }
+        .nav-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* Sections */
+        .card { background: var(--surface); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px; }
+        .section-title { font-size: 1.1rem; margin-bottom: 15px; border-bottom: 2px solid var(--bg); padding-bottom: 10px; }
+
+        /* App List */
+        .app-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .app-item {
+            background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 15px; display: flex; align-items: center; gap: 15px; position: relative;
+        }
+        .app-item img { width: 60px; height: 60px; border-radius: 12px; object-fit: cover; background: #eee; }
+        .app-info { flex: 1; min-width: 0; }
+        .app-info h4 { font-size: 1rem; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .app-info p { font-size: 0.85rem; color: var(--text-light); }
+        .app-actions { display: flex; gap: 5px; }
+
+        /* Notification */
+        #notification {
+            position: fixed; bottom: 20px; right: 20px; background: var(--text); color: white;
+            padding: 12px 24px; border-radius: 8px; transform: translateY(150%); transition: 0.3s;
+            z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        #notification.show { transform: translateY(0); }
+
+        @media (max-width: 768px) {
+            #app-container { padding: 10px; }
+            .app-list { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Notification Toast -->
+    <div id="notification">Action Successful</div>
+
+    <!-- Login Screen -->
+    <div id="login-screen">
+        <div class="login-card">
+            <h2><i class="fas fa-shield-alt"></i> TechDroid Admin</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <input type="email" id="email" class="form-control" placeholder="Admin Email" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="password" class="form-control" placeholder="Password" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%">Log In</button>
+                <p id="login-error" style="color: var(--danger); font-size: 0.9rem; margin-top: 10px; display: none;"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="hidden">
+        <div id="app-container">
+            <header>
+                <div class="brand">
+                    <img id="header-logo" src="https://via.placeholder.com/32" alt="">
+                    <span id="header-name">Store Admin</span>
+                </div>
+                <button onclick="logout()" class="btn btn-sm btn-danger"><i class="fas fa-sign-out-alt"></i></button>
+            </header>
+
+            <nav class="nav-tabs">
+                <button class="nav-btn active" onclick="switchTab('apps')">Manage Apps</button>
+                <button class="nav-btn" onclick="switchTab('add-app')">Add New App</button>
+                <button class="nav-btn" onclick="switchTab('settings')">Store Settings</button>
+                <button class="nav-btn" onclick="switchTab('upi')">UPI Donation</button>
+            </nav>
+
+            <!-- Manage Apps Section -->
+            <section id="tab-apps">
+                <div class="section-title">Submitted Apps</div>
+                <div id="apps-container" class="app-list">
+                    <!-- Apps loaded here -->
+                    <p style="color: var(--text-light)">Loading apps...</p>
+                </div>
+            </section>
+
+            <!-- Add/Edit App Form -->
+            <section id="tab-add-app" class="hidden">
+                <div class="card">
+                    <h3 class="section-title" id="form-title">Submit New App</h3>
+                    <form id="app-form">
+                        <input type="hidden" id="edit-app-id">
+                        <div class="form-group">
+                            <label>App Title</label>
+                            <input type="text" id="app-title" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Subtitle (Short Tagline)</label>
+                            <input type="text" id="app-subtitle" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Logo URL (Direct Image Link)</label>
+                            <input type="url" id="app-logo" class="form-control" placeholder="https://..." required>
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select id="app-category" class="form-control">
+                                <option value="App">App</option>
+                                <option value="Game">Game</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="app-desc" class="form-control" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Permissions (Separate by comma)</label>
+                            <textarea id="app-perms" class="form-control" placeholder="Camera, Storage, Internet..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Screenshots (URLs separated by comma)</label>
+                            <textarea id="app-screens" class="form-control" placeholder="https://img1.png, https://img2.png"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Download Link</label>
+                            <input type="url" id="app-link" class="form-control" placeholder="https://..." required>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button type="submit" class="btn btn-primary" id="submit-btn">Publish App</button>
+                            <button type="button" class="btn btn-danger hidden" id="cancel-edit" onclick="resetForm()">Cancel Edit</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Store Settings -->
+            <section id="tab-settings" class="hidden">
+                <div class="card">
+                    <h3 class="section-title">General Settings</h3>
+                    <form id="settings-form">
+                        <div class="form-group">
+                            <label>Store Name</label>
+                            <input type="text" id="store-name" class="form-control" placeholder="TechDroid">
+                        </div>
+                        <div class="form-group">
+                            <label>Store Logo URL</label>
+                            <input type="url" id="store-logo" class="form-control" placeholder="https://...">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Settings</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- UPI Setup -->
+            <section id="tab-upi" class="hidden">
+                <div class="card">
+                    <h3 class="section-title">Donation Setup</h3>
+                    <p style="margin-bottom: 15px; color: var(--text-light); font-size: 0.9rem;">
+                        This UPI ID will be linked to the "Donate" button on the user panel.
+                    </p>
+                    <form id="upi-form">
+                        <div class="form-group">
+                            <label>UPI ID (VPA)</label>
+                            <input type="text" id="upi-id" class="form-control" placeholder="example@okhdfcbank">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update UPI ID</button>
+                    </form>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
+    <script>
+        // ---------------------------------------------------------
+        // ⚠️ REPLACE WITH YOUR FIREBASE CONFIGURATION
+        // ---------------------------------------------------------
+        const firebaseConfig = {
+  apiKey: "AIzaSyCMIs7zCR7aRn1XfZbeEtia3Sd8d9zTXvI",
+  authDomain: "social-media-app-f92d9.firebaseapp.com",
+  databaseURL: "https://social-media-app-f92d9-default-rtdb.firebaseio.com",
+  projectId: "social-media-app-f92d9",
+  storageBucket: "social-media-app-f92d9.firebasestorage.app",
+  messagingSenderId: "194999899644",
+  appId: "1:194999899644:web:3e2697482c2512fe15ce79"
+};
+        // ---------------------------------------------------------
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        // Elements
+        const loginScreen = document.getElementById('login-screen');
+        const dashboard = document.getElementById('dashboard');
+        const notification = document.getElementById('notification');
+
+        // Authentication State
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                loginScreen.classList.add('hidden');
+                dashboard.classList.remove('hidden');
+                loadApps();
+                loadSettings();
+            } else {
+                loginScreen.classList.remove('hidden');
+                dashboard.classList.add('hidden');
+            }
+        });
+
+        // Login Function
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            auth.signInWithEmailAndPassword(email, password)
+                .catch(error => {
+                    const errEl = document.getElementById('login-error');
+                    errEl.textContent = error.message;
+                    errEl.style.display = 'block';
+                });
+        });
+
+        // Logout
+        function logout() {
+            auth.signOut();
+        }
+
+        // Tab Switching
+        function switchTab(tabName) {
+            // Hide all sections
+            document.querySelectorAll('section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            
+            // Update buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if(tabName === 'apps') loadApps();
+        }
+
+        // -----------------------
+        // APP MANAGEMENT (CRUD)
+        // -----------------------
+        const appForm = document.getElementById('app-form');
+
+        appForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const appId = document.getElementById('edit-app-id').value;
+            const appData = {
+                title: document.getElementById('app-title').value,
+                subtitle: document.getElementById('app-subtitle').value,
+                logo: document.getElementById('app-logo').value,
+                category: document.getElementById('app-category').value,
+                description: document.getElementById('app-desc').value,
+                permissions: document.getElementById('app-perms').value,
+                screenshots: document.getElementById('app-screens').value.split(',').map(s => s.trim()),
+                downloadLink: document.getElementById('app-link').value,
+                timestamp: Date.now()
+            };
+
+            if (appId) {
+                // Edit
+                db.ref('apps/' + appId).update(appData)
+                    .then(() => {
+                        showNotify('App Updated!');
+                        resetForm();
+                        switchTab('apps');
+                        // Highlight apps tab button
+                        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                        document.querySelector('button[onclick="switchTab(\'apps\')"]').classList.add('active');
+                    });
+            } else {
+                // Create
+                db.ref('apps').push(appData)
+                    .then(() => {
+                        showNotify('App Published!');
+                        resetForm();
+                        switchTab('apps');
+                         // Highlight apps tab button
+                         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                         document.querySelector('button[onclick="switchTab(\'apps\')"]').classList.add('active');
+                    });
+            }
+        });
+
+        function loadApps() {
+            const container = document.getElementById('apps-container');
+            container.innerHTML = '<p>Loading...</p>';
+            
+            db.ref('apps').on('value', snapshot => {
+                container.innerHTML = '';
+                const data = snapshot.val();
+                if (!data) {
+                    container.innerHTML = '<p style="padding:20px; color:var(--text-light)">No apps submitted yet.</p>';
+                    return;
+                }
+
+                Object.keys(data).forEach(key => {
+                    const app = data[key];
+                    const el = document.createElement('div');
+                    el.className = 'app-item';
+                    el.innerHTML = `
+                        <img src="${app.logo}" onerror="this.src='https://via.placeholder.com/60'">
+                        <div class="app-info">
+                            <h4>${app.title}</h4>
+                            <p>${app.category}</p>
+                        </div>
+                        <div class="app-actions">
+                            <button class="btn btn-sm btn-primary" onclick="editApp('${key}')"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteApp('${key}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    `;
+                    container.appendChild(el);
+                });
+            });
+        }
+
+        window.deleteApp = function(key) {
+            if(confirm('Delete this app permanently?')) {
+                db.ref('apps/' + key).remove()
+                    .then(() => showNotify('App Deleted'));
+            }
+        };
+
+        window.editApp = function(key) {
+            db.ref('apps/' + key).once('value').then(snapshot => {
+                const app = snapshot.val();
+                
+                document.getElementById('edit-app-id').value = key;
+                document.getElementById('app-title').value = app.title;
+                document.getElementById('app-subtitle').value = app.subtitle;
+                document.getElementById('app-logo').value = app.logo;
+                document.getElementById('app-category').value = app.category;
+                document.getElementById('app-desc').value = app.description;
+                document.getElementById('app-perms').value = app.permissions;
+                document.getElementById('app-screens').value = (app.screenshots || []).join(', ');
+                document.getElementById('app-link').value = app.downloadLink;
+
+                document.getElementById('form-title').innerText = "Edit App";
+                document.getElementById('submit-btn').innerText = "Update App";
+                document.getElementById('cancel-edit').classList.remove('hidden');
+
+                switchTab('add-app');
+                // Manually update nav UI
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                document.querySelector('button[onclick="switchTab(\'add-app\')"]').classList.add('active');
+            });
+        };
+
+        window.resetForm = function() {
+            document.getElementById('app-form').reset();
+            document.getElementById('edit-app-id').value = '';
+            document.getElementById('form-title').innerText = "Submit New App";
+            document.getElementById('submit-btn').innerText = "Publish App";
+            document.getElementById('cancel-edit').classList.add('hidden');
+        };
+
+        // -----------------------
+        // STORE SETTINGS & UPI
+        // -----------------------
+        document.getElementById('settings-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            db.ref('settings').set({
+                name: document.getElementById('store-name').value,
+                logo: document.getElementById('store-logo').value
+            }).then(() => showNotify('Settings Saved'));
+        });
+
+        document.getElementById('upi-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            db.ref('upi').set({
+                id: document.getElementById('upi-id').value
+            }).then(() => showNotify('UPI ID Updated'));
+        });
+
+        function loadSettings() {
+            db.ref('settings').on('value', snap => {
+                const data = snap.val();
+                if(data) {
+                    document.getElementById('header-name').innerText = data.name || "Store Admin";
+                    if(data.logo) document.getElementById('header-logo').src = data.logo;
+                    
+                    document.getElementById('store-name').value = data.name || "";
+                    document.getElementById('store-logo').value = data.logo || "";
+                }
+            });
+
+            db.ref('upi').on('value', snap => {
+                const data = snap.val();
+                if(data) document.getElementById('upi-id').value = data.id || "";
+            });
+        }
+
+        // Utils
+        function showNotify(msg) {
+            notification.textContent = msg;
+            notification.classList.add('show');
+            setTimeout(() => notification.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+</html>
